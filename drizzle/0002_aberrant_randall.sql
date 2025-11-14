@@ -1,0 +1,1 @@
+ALTER TABLE "participants" ADD COLUMN "has_team" boolean DEFAULT false NOT NULL;
