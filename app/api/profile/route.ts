@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentSession } from "@/lib/session";
 import { db } from "@/db";
 import { participants } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
 
 export async function PUT(request: NextRequest) {
   try {
@@ -25,6 +25,26 @@ export async function PUT(request: NextRequest) {
     }
     
     const sanitizedTeamName = teamName && teamName.length > 0 && teamName.length <= 50 ? teamName : null;
+
+    if (sanitizedTeamName && sanitizedTeamName !== user.teamName) {
+      const existingTeam = await db
+        .select()
+        .from(participants)
+        .where(
+          and(
+            eq(participants.teamName, sanitizedTeamName),
+            ne(participants.id, user.id)
+          )
+        )
+        .limit(1);
+
+      if (existingTeam.length > 0) {
+        return NextResponse.json(
+          { error: "This team name is already taken. To join this team, ask one of its members to add you from your participant page." },
+          { status: 400 }
+        );
+      }
+    }
 
     const updateData = {
       name: body.name,

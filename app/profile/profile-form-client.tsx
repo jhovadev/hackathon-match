@@ -265,12 +265,14 @@ export default function ProfileFormClient({
                   }}
                   className="w-full px-4 py-3 border-2 border-border bg-background text-foreground rounded-sm focus:outline-none focus:border-primary transition-colors"
                   disabled={isLoading}
-                  placeholder="Enter your team name"
+                  placeholder="Create a new team name"
                   maxLength={50}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Enter your team name or leave empty if looking for teammates
-                </p>
+                <div className="p-3 border-2 border-blue-500/30 bg-blue-500/5 rounded-sm">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    <strong className="text-foreground">Create a new team</strong> by entering a unique name, or <strong className="text-foreground">leave empty</strong> to find teammates. To join an existing team, ask a member to add you from your participant page.
+                  </p>
+                </div>
               </div>
 
               <div className="space-y-2 md:col-span-2">
