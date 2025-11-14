@@ -30,7 +30,19 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Providers>{children}</Providers>
+        <Providers>
+          <header className="fixed top-0 left-0 p-4 z-50">
+            <a
+              href="https://github.com/cuevaio/hackathon-match"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm hover:underline"
+            >
+              GitHub
+            </a>
+          </header>
+          {children}
+        </Providers>
         <Analytics />
       </body>
     </html>
