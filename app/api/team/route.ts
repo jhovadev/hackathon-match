@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentSession } from "@/lib/session";
 import { db } from "@/db";
 import { participants } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,12 +13,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    if (!user.teamName) {
+      return NextResponse.json(
+        { error: "You must have a team to manage team members" },
+        { status: 400 }
+      );
+    }
+
     const body = await request.json();
-    const { participantId, teamName } = body;
+    const { participantId, action } = body;
 
     if (!participantId) {
       return NextResponse.json(
         { error: "Participant ID is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!action || !["add", "remove"].includes(action)) {
+      return NextResponse.json(
+        { error: "Action must be 'add' or 'remove'" },
         { status: 400 }
       );
     }
@@ -42,11 +56,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (teamName === null || teamName === "") {
-      if (
-        targetParticipant.teamName &&
-        targetParticipant.teamName !== user.teamName
-      ) {
+    if (action === "remove") {
+      if (!targetParticipant.teamName) {
+        return NextResponse.json(
+          { error: "Participant is not on any team" },
+          { status: 400 }
+        );
+      }
+
+      if (targetParticipant.teamName !== user.teamName) {
         return NextResponse.json(
           { error: "Cannot remove participant from a different team" },
           { status: 403 }
@@ -71,51 +89,50 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (targetParticipant.teamName && targetParticipant.teamName !== user.teamName) {
-      return NextResponse.json(
-        { error: "Participant already belongs to a different team" },
-        { status: 403 }
-      );
+    if (action === "add") {
+      if (targetParticipant.teamName) {
+        return NextResponse.json(
+          { error: "Participant already belongs to a team" },
+          { status: 403 }
+        );
+      }
+
+      const teamMembers = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(participants)
+        .where(eq(participants.teamName, user.teamName));
+
+      const currentTeamSize = teamMembers[0]?.count || 0;
+
+      if (currentTeamSize >= 5) {
+        return NextResponse.json(
+          { error: "Team is full (maximum 5 members)" },
+          { status: 400 }
+        );
+      }
+
+      const [updated] = await db
+        .update(participants)
+        .set({
+          teamName: user.teamName,
+        })
+        .where(eq(participants.id, participantId))
+        .returning();
+
+      revalidatePath("/");
+      revalidatePath(`/p/${participantId}`);
+
+      return NextResponse.json({
+        success: true,
+        participant: updated,
+        action: "added",
+      });
     }
 
-    if (targetParticipant.teamName && targetParticipant.teamName.toLowerCase() === 'admin') {
-      return NextResponse.json(
-        { error: "Cannot modify participants in the ADMIN team" },
-        { status: 403 }
-      );
-    }
-
-    const sanitizedTeamName = teamName.trim();
-    if (sanitizedTeamName.length === 0 || sanitizedTeamName.length > 50) {
-      return NextResponse.json(
-        { error: "Team name must be between 1 and 50 characters" },
-        { status: 400 }
-      );
-    }
-
-    if (sanitizedTeamName.toLowerCase() === 'admin') {
-      return NextResponse.json(
-        { error: "Team name 'ADMIN' is reserved and cannot be used" },
-        { status: 400 }
-      );
-    }
-
-    const [updated] = await db
-      .update(participants)
-      .set({
-        teamName: sanitizedTeamName,
-      })
-      .where(eq(participants.id, participantId))
-      .returning();
-
-    revalidatePath("/");
-    revalidatePath(`/p/${participantId}`);
-
-    return NextResponse.json({
-      success: true,
-      participant: updated,
-      action: "assigned",
-    });
+    return NextResponse.json(
+      { error: "Invalid action" },
+      { status: 400 }
+    );
   } catch (error) {
     console.error("Team management error:", error);
     return NextResponse.json(

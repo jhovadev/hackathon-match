@@ -98,7 +98,7 @@ export default function ParticipantDetailClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           participantId: participant.id,
-          teamName: action === "add" ? currentUser?.teamName : null,
+          action,
         }),
       });
 
