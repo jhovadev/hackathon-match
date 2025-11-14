@@ -25,7 +25,8 @@
 ## Architecture
 
 ### Database Schema
-- **participants**: User profiles with auth credentials, contact info, project interests, social links, avatar seeds, and team status
+- **participants**: User profiles with auth credentials, contact info, project interests, social links, avatar seeds, and team name
+  - `teamName` (text, nullable): Indicates team membership - presence means user has a team
 - **sessions**: Session management with secure token hashing and cascade deletion
 
 ### Authentication System
@@ -36,26 +37,36 @@
 - Auto-generated secure passwords during seeding
 
 ### Key Features
-1. **Public Participant Grid**: Auto-shuffling every 20s with progress bar, pixel-art avatars, animated cards
-2. **Profile Management**: Edit personal info, randomize avatar, toggle team status, view-only email
-3. **Participant Details**: Individual profile pages with full info and social links
-4. **Authentication**: Login/logout with email and password
-5. **Theme Support**: Light/dark mode toggle with next-themes
-6. **Responsive Design**: Mobile-first with retro/pixel aesthetic
+1. **Team-Grouped Homepage**: 
+   - "Looking for Teammates" section (participants without team, auto-shuffling)
+   - "Teams" section (grouped by team name, alphabetically sorted)
+2. **Team Management**: 
+   - Users can set team name in profile
+   - Add participants to team (only if they have no team)
+   - Remove participants from team (only if on same team)
+   - Team membership determined by `teamName` field presence
+3. **Profile Management**: Edit personal info, team name, randomize avatar, view-only email
+4. **Participant Details**: Individual profile pages with full info, social links, and team management
+5. **Authentication**: Login/logout with email and password
+6. **Role Filtering**: Filter participants by Engineer/Designer/Product/Growth/Other
+7. **Theme Support**: Light/dark mode toggle with next-themes
+8. **Responsive Design**: Mobile-first with retro/pixel aesthetic
 
 ### File Structure
 ```
 app/
   api/auth/           # Login/logout endpoints
-  api/profile/        # Profile update endpoint
+  api/profile/        # Profile update endpoint (includes team name)
+  api/team/           # Team management endpoint (add/remove members)
   login/              # Login page
   profile/            # Profile edit page (protected)
-  p/[id]/             # Participant detail pages (protected)
-  page.tsx            # Home page with participant grid
+  p/[id]/             # Participant detail pages (protected, with team mgmt)
+  page.tsx            # Home page with team grouping
 components/
   ui/                 # Shadcn/Radix UI components
   participant-*.tsx   # Participant display components
-  shuffle-progress-bar.tsx  # Auto-shuffle timer
+  team-section.tsx    # Team grouping component
+  shuffle-progress-bar.tsx  # Auto-shuffle timer (for non-team section)
   theme-toggle.tsx    # Dark/light mode switcher
 db/
   schema.ts           # Drizzle schema definitions
@@ -86,6 +97,15 @@ scripts/
 - Use prepared statements with `.where(eq(...))` for queries
 - Handle errors gracefully with try/catch
 - Use `revalidate` for ISR caching on public pages
+- Team membership: Check `teamName` field (not null = has team)
+
+## Team Management Rules
+- Users can set/change their own team name anytime via profile
+- Users can add participants to their team ONLY IF target has no team
+- Users can remove participants from their team ONLY IF target has same team name
+- Users CANNOT modify participants from different teams
+- Team name is nullable text field (max 50 chars, trimmed)
+- Home page groups: "Looking for Teammates" (no team) at top, "Teams" (grouped) below
 
 ## Animation Patterns
 - Use `motion` from `motion/react` for animations

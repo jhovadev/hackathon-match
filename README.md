@@ -5,12 +5,14 @@ A modern hackathon participant discovery platform built with Next.js 16, featuri
 ## Features
 
 - **🎲 Auto-Shuffling Grid**: Participant cards automatically shuffle every 20 seconds with smooth animations
+- **👥 Team Management**: Create and manage teams, add/remove members, organize participants by team
 - **👤 Profile Management**: Complete profile editing with customizable pixel-art avatars
 - **🔐 Secure Authentication**: Session-based auth with SHA-256 password hashing
 - **🎨 Theme Support**: Dark/light mode toggle with smooth transitions
 - **📱 Responsive Design**: Mobile-first approach with retro/pixel aesthetic
 - **⚡ Real-time Updates**: ISR caching for optimal performance
 - **🔍 Participant Discovery**: Browse detailed profiles with social links and project interests
+- **🎯 Smart Filtering**: Filter participants by role (Engineer, Designer, Product, Growth)
 
 ## Tech Stack
 
@@ -77,7 +79,8 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 - Core fields: id, name, email, phone, hashed password
 - Profile: wants to build, has built, profile type (Engineer/Designer/Product/Growth/Other)
 - Social: website, LinkedIn, GitHub, X (Twitter)
-- Metadata: organization, avatar seed, team status
+- Teams: team name (nullable - indicates team membership)
+- Metadata: organization, avatar seed
 
 ### Sessions
 - Session-based auth with 24-hour expiration
@@ -100,15 +103,17 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 app/
 ├── api/
 │   ├── auth/           # Login/logout endpoints
-│   └── profile/        # Profile update endpoint
+│   ├── profile/        # Profile update endpoint
+│   └── team/           # Team management endpoint
 ├── login/              # Login page
 ├── profile/            # Profile management (protected)
 ├── p/[id]/             # Individual participant pages (protected)
-└── page.tsx            # Home with shuffling grid
+└── page.tsx            # Home with team grouping
 
 components/
 ├── ui/                 # Reusable UI components (Shadcn)
 ├── participant-*.tsx   # Participant display components
+├── team-section.tsx    # Team grouping component
 ├── shuffle-progress-bar.tsx
 └── theme-toggle.tsx
 
@@ -126,14 +131,26 @@ scripts/
 └── seed.ts             # CSV import script
 ```
 
-## Authentication Flow
+## Key Workflows
 
+### Authentication Flow
 1. Users log in with email/password
 2. Server validates credentials and creates session
 3. Session token stored in HTTP-only cookie (24h expiration)
 4. Protected routes validate session via middleware
 5. Users can update profile and manage avatar
 6. Logout deletes session and clears cookie
+
+### Team Management Flow
+1. Users can set their team name in profile settings
+2. Home page displays participants grouped by:
+   - "Looking for Teammates" (no team name)
+   - "Teams" section (grouped by team name)
+3. Users can add teammates:
+   - Only if target participant has no team assigned
+4. Users can remove teammates:
+   - Only if participant is on their team
+5. Team membership determined by `teamName` field presence
 
 ## Design Philosophy
 
