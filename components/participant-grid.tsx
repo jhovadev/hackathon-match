@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import ParticipantCard from "./participant-card";
 import { ShuffleProgressBar } from "./shuffle-progress-bar";
+import { ParticipantFilters } from "./participant-filters";
 import type { Participant } from "@/db/schema";
 
 interface ParticipantGridProps {
@@ -14,9 +15,18 @@ export function ParticipantGrid({ initialParticipants }: ParticipantGridProps) {
   const [participants, setParticipants] = useState(initialParticipants);
   const [progress, setProgress] = useState(100);
   const [isPaused, setIsPaused] = useState(false);
+  const [selectedRole, setSelectedRole] = useState("all");
+  const [selectedTeamStatus, setSelectedTeamStatus] = useState("all");
 
   const SHUFFLE_INTERVAL = 40000;
   const TICK_RATE = 100;
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (selectedRole !== "all") count++;
+    if (selectedTeamStatus !== "all") count++;
+    return count;
+  }, [selectedRole, selectedTeamStatus]);
 
   const shuffleArray = useCallback((array: Participant[]) => {
     const shuffled = [...array];
@@ -27,10 +37,30 @@ export function ParticipantGrid({ initialParticipants }: ParticipantGridProps) {
     return shuffled;
   }, []);
 
+  const displayedParticipants = useMemo(() => {
+    return participants.filter((participant) => {
+      const roleMatch =
+        selectedRole === "all" ||
+        participant.profile.toLowerCase().includes(selectedRole);
+
+      const teamMatch =
+        selectedTeamStatus === "all" ||
+        (selectedTeamStatus === "yes" && participant.hasTeam) ||
+        (selectedTeamStatus === "no" && !participant.hasTeam);
+
+      return roleMatch && teamMatch;
+    });
+  }, [participants, selectedRole, selectedTeamStatus]);
+
   const handleManualShuffle = useCallback(() => {
     setParticipants((current) => shuffleArray(current));
     setProgress(100);
   }, [shuffleArray]);
+
+  const handleClearFilters = useCallback(() => {
+    setSelectedRole("all");
+    setSelectedTeamStatus("all");
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -57,12 +87,21 @@ export function ParticipantGrid({ initialParticipants }: ParticipantGridProps) {
 
   return (
     <>
+      <ParticipantFilters
+        selectedRole={selectedRole}
+        selectedTeamStatus={selectedTeamStatus}
+        onRoleChange={setSelectedRole}
+        onTeamStatusChange={setSelectedTeamStatus}
+        onClearFilters={handleClearFilters}
+        activeFilterCount={activeFilterCount}
+      />
+
       <motion.div
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
         layout
       >
         <AnimatePresence mode="popLayout">
-          {participants.map((participant) => (
+          {displayedParticipants.map((participant) => (
             <motion.div
               key={participant.id}
               layout
