@@ -16,6 +16,14 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
 
     const teamName = body.teamName?.trim() || null;
+    
+    if (teamName && teamName.toLowerCase() === 'admin') {
+      return NextResponse.json(
+        { error: "Team name 'ADMIN' is reserved and cannot be used" },
+        { status: 400 }
+      );
+    }
+    
     const sanitizedTeamName = teamName && teamName.length > 0 && teamName.length <= 50 ? teamName : null;
 
     const updateData = {

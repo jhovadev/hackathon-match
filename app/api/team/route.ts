@@ -78,10 +78,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (targetParticipant.teamName && targetParticipant.teamName.toLowerCase() === 'admin') {
+      return NextResponse.json(
+        { error: "Cannot modify participants in the ADMIN team" },
+        { status: 403 }
+      );
+    }
+
     const sanitizedTeamName = teamName.trim();
     if (sanitizedTeamName.length === 0 || sanitizedTeamName.length > 50) {
       return NextResponse.json(
         { error: "Team name must be between 1 and 50 characters" },
+        { status: 400 }
+      );
+    }
+
+    if (sanitizedTeamName.toLowerCase() === 'admin') {
+      return NextResponse.json(
+        { error: "Team name 'ADMIN' is reserved and cannot be used" },
         { status: 400 }
       );
     }
