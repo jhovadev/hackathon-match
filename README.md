@@ -142,15 +142,26 @@ scripts/
 6. Logout deletes session and clears cookie
 
 ### Team Management Flow
-1. Users can set their team name in profile settings
-2. Home page displays participants grouped by:
-   - "Looking for Teammates" (no team name)
-   - "Teams" section (grouped by team name)
-3. Users can add teammates:
-   - Only if target participant has no team assigned
-4. Users can remove teammates:
-   - Only if participant is on their team
-5. Team membership determined by `teamName` field presence
+1. **Creating/Joining Teams**:
+   - Users can **create new teams** by entering a unique team name in their profile
+   - Users **cannot self-join existing teams** - validation prevents duplicate team names
+   - To join an existing team, users must be **invited by a team member**
+2. **Team Display**:
+   - Home page displays participants grouped by:
+     - "Looking for Teammates" (no team name, auto-shuffling grid)
+     - "Teams" section (grouped by team name, alphabetically sorted)
+3. **Adding Team Members**:
+   - Team members can invite others from participant detail pages
+   - Requirements: Target must have no team AND current team must have < 5 members
+   - Uses server-side validation with authenticated user's team name only
+4. **Removing Team Members**:
+   - Team members can remove others only if they're on the same team
+   - Users can leave their own team by clearing the team name in profile
+5. **Security Features**:
+   - Team size limited to 5 members maximum
+   - Cannot modify participants from different teams
+   - All team operations use action-based API (`add`/`remove` actions)
+   - Team names are validated server-side to prevent unauthorized access
 
 ## Design Philosophy
 
